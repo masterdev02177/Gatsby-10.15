@@ -1,0 +1,26 @@
+---
+title: 'Command Line Interface'
+---
+import ImageZoom from '/src/components/ImageZoom'
+
+## How to install Railflow license inside a docker container when there is no Internet connection?
+In such a case you can use Railflow offline license file (with .skm extension) and either copy that file inside your docker container or upload it to some FTP/HTTP server and provide the URL with -l parameter, e.g.: `-l http://http-server-address/license-file.skm`
+
+## How to view debug logs?
+Railflow adds info/error messages into both, standard output and `logs/railflow.log` file in the current running directory. The log file also contains some additional information for debugging
+
+## Error: "Project with name: 'XXX' does not exist. Please create it before exporting data"
+1. Check if the project with the name 'XXX' exists in your TestRail server. The project name is case sensitive.
+2. If your project name has spaces, make sure you have escaped the value with double quotes, e.g.: `-proj "Railflow Demo"`
+
+## Error: "There are no report files"
+Railflow cannot find any report file to upload. Please check the value of the `-r` (`--report-files`) parameter. It supports ant-style wildcards, e.g. `/surefire-reports/*.xml`.
+
+## Error: "Error happened during HTTP call: Request failed with status code 403"
+Make sure that TestRail REST API is enabled. The API can be enabled in TestRail’s administration area under `Administration` &#x2192 `Site Settings` &#x2192 `API`.
+
+<ImageZoom src="faq/question01.png" alt='How to solve Error: "Error happened during HTTP call: Request failed with status code 403"'/>
+
+## Error: "Error happened during HTTP call: Request failed with status code 401"
+1. Check if the username and password/API key are correct.
+2. Check if the user has permission to operate the corresponding project.

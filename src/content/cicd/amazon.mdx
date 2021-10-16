@@ -1,0 +1,89 @@
+---
+title: Amazon CodeBuild
+description: Integrate various testing tools with TestRail by using Railflow and Amazon CodeBuild.
+---
+
+import ImageZoom from '../../components/ImageZoom'
+
+# Introduction
+[Railflow](https://railflow.io) NPM module can help you integrate your various testing tools and framework running via [Amazon CodeBuild](https://aws.amazon.com/codebuild/) with TestRail.  
+Doing this brings all testing activity inside TestRail giving you a clear picture of overall testing progress with TestRail's powerful dashboards.
+
+## Use [Amazon CodeBuild](https://aws.amazon.com/codebuild/) with Railflow NPM module/CLI
+
+1. In the Amazon Secret Manager, add a new secret named `RAILFLOW` with the `Other type of secrets` type.
+Add two key/value pairs to the secret:
+   1. `RAILFLOW_KEY` - the Railflow license key.
+   2. `TESTRAIL_CREDS_PASS` - the password for the TestRail user.
+
+<ImageZoom src="cicd/amazon/sm01.png" alt=""/><br/>
+
+>**NOTE**
+>Here is an example of how the plain text 'RAILFLOW' secret should look like:
+```json
+{
+"RAILFLOW_KEY": "XXXXX-XXXXX-XXXXX-XXXXX",
+"TESTRAIL_CREDS_PASS": "uXtpzXiPLEoDyhFx82Ta-zST1fvoFM1GaKNBE63GT"
+}
+```
+
+2. Adjust security policies and allow service role which you are using for running builds to access Secrets Manager.
+
+3. In the Amazon Console, navigate to `Developer Tools` &#x2192 `CodeBuild` &#x2192 `Build projects` &#x2192 `<Your Project>`, click on the `Edit` &#x2192 `Environment` and do the following:
+   1. Add a `RAILFLOW_KEY` variable with value `RAILFLOW:RAILFLOW_KEY` and type `Secrets Manager`.
+   2. Add a `TESTRAIL_CREDS_PASS` variable with value `RAILFLOW:TESTRAIL_CREDS_PASS` and type `Secrets Manager`.
+
+<ImageZoom src="cicd/amazon/cli01.png" alt=""/><br/>
+
+4. Add a NodeJS installation step. If the job already contains NodeJS, please skip this.
+```yaml:title=Buildspec.yml
+phases:
+  install:
+    runtime-versions:
+      nodejs: 14
+```
+
+5. Add Railflow installation and test results uploading commands into `post_build`.
+```yaml:title=Buildspec.yml
+  post_build:
+    commands:
+      - npm install railflow
+      - npx railflow -k $RAILFLOW_KEY -url https://testrail6.railflow.io/ -u TestRailUsername -p $TESTRAIL_CEDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+```
+>**NOTE**
+Adjust the Railflow arguments according to the Railflow [`Command Line Arguments`](/cli/railflow-npm#command-line-arguments) reference.
+
+>**NOTE**
+Here is a complete example script which runs JUnit tests with Maven and then export results into TestRail:
+
+```yaml:title=Buildspec.yml
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto8
+      nodejs: 14
+  build:
+    commands:
+      - mvn clean test
+  post_build:
+    commands:
+      - npm install railflow
+      - npx railflow -k $RAILFLOW_KEY -url https://testrail6.railflow.io/ -u TestRailUsername -p $TESTRAIL_CEDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+```
+
+### Examples
+#### Here is railflow output example:
+<ImageZoom src="cicd/railflow/log-gitlab.png" alt="" /><br/>
+
+#### And results in TestRail:
+##### Test Cases:
+<ImageZoom src="cicd/testrail/testrail-testcases.png" alt="" /><br/>
+
+##### Test Plan and Test Run:
+<ImageZoom src="cicd/testrail/testrail-plan-run.png" alt="" /><br/>
+<ImageZoom src="cicd/testrail/testrail-results.png" alt="" /><br/>
+
+##### Created Milestones hierarchy:
+<ImageZoom src="cicd/testrail/testrail-milestones.png" alt="" />

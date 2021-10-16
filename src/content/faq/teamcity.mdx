@@ -1,0 +1,22 @@
+---
+title: 'TeamCity'
+---
+import ImageZoom from '/src/components/ImageZoom'
+
+## "TestRail Server" dropdown in Railflow configuration is empty
+Navigate to `Administration` &#x2192 `Railflow` page and add at least one TestRail server ([documentation](/cicd/teamcity#global-settings-configuration))
+
+## Error: "Railflow: Error occurred while uploading results to TestRail: There are no report files to process"
+Railflow cannot find any file according to the pattern specified in `Result File Pattern` configuration field. Make sure it points to the valid file(s).
+
+## Error: "Railflow: Error occurred while uploading results to TestRail: Custom field: 'field label' ('field label') is required in your TestRail project"
+Railflow cannot create test case in TestRail because it has some required field and the value for this field is not provided. To fix that, please provide correct value with `Case Fields` configuration field.
+
+## Error: "Error happened during HTTP call: Request failed with status code 403"
+Make sure that TestRail REST API is enabled. The API can be enabled in TestRail’s administration area under `Administration` &#x2192 `Site Settings` &#x2192 `API`.
+
+<ImageZoom src="faq/question01.png" alt='How to solve Error: "Error happened during HTTP call: Request failed with status code 403"'/>
+
+## Error: "Error happened during HTTP call: Request failed with status code 401"
+1. Check if the username and password/API key are correct.
+2. Check if the user has permission to operate the corresponding project.

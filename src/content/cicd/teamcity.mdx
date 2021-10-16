@@ -1,0 +1,227 @@
+---
+title: TeamCity
+description: Learn how to use Railflow TeamCity plugin and NPM CLI.
+---
+
+import ImageZoom from '../../components/ImageZoom'
+
+# Introduction
+[Railflow](https://railflow.io) can help you integrate your various testing tools and framework running via [TeamCity](https://jetbrains.com/teamcity/) with TestRail.  
+Doing this brings all testing activity inside TestRail giving you a clear picture of overall testing progress with TestRail's powerful dashboards.  
+Railflow provides two simple ways to integrate TeamCity with TestRail.
+
+*  TeamCity native plugin
+*  NPM module / CLI
+
+This document will help guide you through each of them.
+
+## TeamCity plugin
+[TeamCity](https://jetbrains.com/teamcity/) plugin allows you to integrate your [TeamCity](https://jetbrains.com/teamcity/) with [TestRail](https://www.gurock.com/testrail/) in a few clicks!
+
+## Plugin installation
+*	Download current version of plugin from <https://railflow.io/download>
+*	Click on `Administration` &#x2192 `Plugins List`
+
+<ImageZoom src="cicd/teamcity/install-1.png" alt=""/><br/>
+
+*	Click on `Upload plugin zip` &#x2192 `Browse` and select downloaded zip file and click on "Save" button
+
+<ImageZoom src="cicd/teamcity/install-2.png" alt=""/><br/>
+
+*	Restart TeamCity server
+
+## Plugin configuration
+Plugin configuration consists of two parts:
+
+### Global settings configuration
+Railflow global configurations are accessible on `Administration` &#x2192 `Railflow` page:
+
+<ImageZoom src="cicd/teamcity/global-settings-1.png" alt=""/><br/>
+
+|Section Name     | Field Name                    | Description                                                                                                                                                                                                                                                                                                                                                                                       |
+------------------|-------------------------------|----------------------------------------------------------------|
+|Railflow License | Status                        | Status of the license		                                   |
+|                 | Expiration Date               | Expiration date of the license	                               |
+|                 | License Key                   | Option to activate license as a key	                           |
+|                 | License File                  | Option to activate license as a file	                       |
+|TestRail Servers | Name			              | Name of the TestRail server to uniquely identify server       |
+|                 | Url				              | URL for your TestRail instance. Example: https://testrail:8080 |
+|                 | Username				      | User Name of user in TestRail                                  |
+|                 | Password				      | Password of TestRail user                                      |
+
+The plugin requires a valid license key or license file. A free evaluation license key/file could be obtained from the [Railflow website](https://railflow.io/register).  
+License key should be used when your TeamCity has Internet access, as the plugin will call for an external resource to validate the license.  
+To apply license key, select the `License Key` option, put the license key into the text box and click the `Activate License` button.  
+
+If your TeamCity does not have Internet access, please use a pre-activated license file.     
+To apply license file, select the `License File` option and click on the `Choose File`, select the license file in .skm format and click on the `Upload License` button.
+
+After the license is set, please add at least one TestRail server and fill all the configuration fields.
+
+### "Railflow: Upload test results into TestRail" build step configuration
+
+To upload test results into TestRail, a new `Railflow: Upload test results into TestRail` build step has to be added:
+
+<ImageZoom src="cicd/teamcity/config-1.png" alt=""/><br/>
+
+<ImageZoom src="cicd/teamcity/config-2.png" alt=""/><br/>
+
+<ImageZoom src="cicd/teamcity/config-3.png" alt=""/><br/>
+
+<ImageZoom src="cicd/teamcity/config-4.png" alt=""/><br/>
+
+| Field Name                       | Required | Description                                                                                                                                                                                                                                                                                                                                                                                       |
+|-----------------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| TestRail Server 	   | Yes	| Select one of the server names configured in `Global settings configuration`	|
+| TestRail User 	   | No	| If specified, overrides TestRail user name defined in Global Configuration	|
+| TestRail Password  | No	| If specified, overrides TestRail user password defined in Global Configuration|
+| Project           | Yes   | The name of a project in TestRail to which results should be exported			|
+| Fail build if upload unsuccessful | N/A      | If checked, the build will be marked as failed if for any reason the plugin could not upload the results. This could be due to Railflow issues, TestRail server issues, network issues, etc.	|
+| Results File Pattern   | Yes      | The file path to the test report file(s) generated during the build. Ant-style patterns such as **\*\*/surefire-reports/\*.xml** can be used.<br/>E.g. use **target/surefire-reports/*.xml** to capture all XML files in **target/surefire-reports** directory.	|
+| Report Format             | Yes      | Format of test results generated during the build.	|
+| Test Case Path	   | Yes | Path to where Railflow should upload test case definitions, must contain suite name in the beginning (for single-suite project, suite name is always 'Master'), e.g. Master/Section1/Section2 |
+| Test Plan Name    | No       | Name of a test plan in TestRail to which test results will be added |
+| Test Run Name     | No       | Name of a test run in TestRail to which test results will be added |
+| Milestone Path      | No       | Path to a milestone in TestRail to which test run/plan will be added.<br/>E.g. Milestone1/Milestone2 |
+| Smart Test Failure Assignment |	No	| User emails for smart failure assignment.<br/>One user email is selected randomly to assign a failed test case.<br/>Each email should start with a new line |
+
+| Advanced Field Name | Description                                                                                                                                                                                                                                                                                                                                                                                       |
+|---------------------|--------------------------------------------------------------------------------------------|
+| Case Type           | Name of a test case type in TestRail, e.g. `Automated` |
+| Case Priority       | Name of a test case priority in TestRail, e.g. `High` |
+| Test Case Template  | Name of a TestRail template. If it is blank, `Test Case (Steps)` will be used. |
+| Test Case Fields    | Values for case fields in TestRail can be specified in this field. The format is [TestRail field label]=[value] and each field name\\value pair should start with the new line.<br/>E.g.:<br/>Custom Field One=foo<br/>Custom Field Two=bar |
+| Test Result Fields  |	Values for result fields in TestRail can be specified in this field. The format is [TestRail field label]=[value] and each field name\\value pair should start with the new line.<br/>E.g.:<br/>Custom Result Field One=foo<br/>Custom Result Field Two=bar |
+| Configuration Names | A list of configuration names in TestRail. The format is [Config Group Name]/[Config Name]. Each entry must start with the new line.<br/>E.g.:<br/>Operating Systems/Linux<br/>Browsers/Chrome|
+| Test case to ID map | A list of test name to TestRail ID mappings. Each line contains a mapping between fully-qualified test case name and TestRail ID.<br/>E.g.: io.railflow.Test.method1=42<br/>io.railflow.Test.method2=43|
+| Close Run			  | If checked, Railflow will close the test run in TestRail and archive its tests and results |
+| Disable Grouping	  | If checked, Railflow will ignore structure in report files and upload all test cases into one Section, defined by the Test Path parameter. |
+| Upload Timeout	  | The number of minutes to wait for the Railflow to process the request. 0 means wait indefinitely, if not provided default value is considered as 0  |
+
+>**Note**
+In order to upload results to TestRail in case when tests failed, just set `Execute step` field to `Even if some of the previous steps failed`. In such a case results will be uploaded regardless of the result of the previous step.
+
+### Execution
+Once the job is configured, simply run the build. Here is TeamCity build execution output example:
+
+<ImageZoom src="cicd/teamcity/upload-results-log-1.png" alt=""/><br/>
+
+<ImageZoom src="cicd/teamcity/upload-results-ci-1.png" alt=""/><br/>
+
+And results in TestRail:
+
+Test Cases:
+
+<ImageZoom src="cicd/teamcity/upload-results-1.png" alt=""/><br/>
+
+Test Plan and Test Run:
+
+<ImageZoom src="cicd/teamcity/upload-results-2.png" alt=""/><br/>
+
+<ImageZoom src="cicd/teamcity/upload-results-3.png" alt=""/><br/>
+
+
+Created Milestones hierarchy:
+
+<ImageZoom src="cicd/teamcity/upload-results-4.png" alt=""/><br/>
+
+### Smart Failure Assignment
+
+The Smart Failure Assignment feature allows to automatically assign failed test cases to a user from the list of users configured in `Assign To Users` build step configuration parameter. Users from the list are assigned in a round-robin manner.
+Configured users should be valid users in TestRail and should have explicit access to TestRail project.
+
+Due to the issue in the TestRail API, users should be configured explicitly on the project access page and have a role defined in the `Project Access` column:
+<ImageZoom src="cicd/teamcity/smart-failure-5.png" alt=""/><br/>
+
+#### Example
+Consider a use case where five test cases are failing and two users are configured in `Assign To Users` field.
+
+##### "Assign To Users" field configuration
+
+<ImageZoom src="cicd/teamcity/smart-failure-1.png" alt=""/><br/>
+
+##### Console output
+
+<ImageZoom src="cicd/teamcity/smart-failure-2.png" alt=""/><br/>
+
+##### TestRail results
+
+<ImageZoom src="cicd/teamcity/smart-failure-3.png" alt=""/><br/>
+
+<ImageZoom src="cicd/teamcity/smart-failure-4.png" alt=""/><br/>
+
+
+
+## NPM module/CLI
+>**Note**
+[Node](https://nodejs.org) 11 or higher version is needed on the server.
+
+You can run Railflow in [TeamCity](https://jetbrains.com/teamcity/) by the following steps:
+
+1. Log in to TeamCity as `Administrator`, create project from your VCS repository, and then go to the project settings page.
+
+2. Create a new `Build Configuration`.
+
+<ImageZoom src="cicd/teamcity/cli01.png" alt=""/><br/>
+
+3. Click on the `Build Steps` item in the left list.
+
+<ImageZoom src="cicd/teamcity/cli02.png" alt=""/><br/>
+
+4. Click on the `Add Build Step` button to add a step for running unit tests.
+Here is an example for running unit tests with Maven.
+
+<ImageZoom src="cicd/teamcity/cli03.png" alt=""/><br/>
+
+5. Click on the `Add Build Step` button again to add the step for installing Railflow.
+   1. Select `Command Line` for `Runner type`.
+   2. Fill in an appropriate name for `Step name`, such as `Install Railflow`.
+   3. Select `Even if some of the previous steps failed` for `Execute step`.
+   4. Fill in `npm install Railflow` in `Custom Script`.
+   5. Click on the `Save` button to save the settings.
+
+<ImageZoom src="cicd/teamcity/cli04.png" alt=""/><br/>
+
+6. Click on the `Add Build Step` button again to Add the step for performing Railflow to upload the test results.
+   1. Select `Command Line` for `Runner type`.
+   2. Fill in an appropriate name for `Step name`, such as `Export test resuls`.
+   3. Select `Even if some of the previous steps failed` for `Execute step`.
+   4. Refer to [`Getting Started`](/) chapter to fill in the execution script for `Custom Script`.
+   5. Click on the `Save` button to save the settings.
+
+<ImageZoom src="cicd/teamcity/cli05.png" alt=""/><br/>
+
+```shell:title=example
+npx railflow -k %RAILFLOW_KEY% -url https://testrail.server.address/ -u %TESTRAIL_CREDS_USER% -p %TESTRAIL_CREDS_PASS% -pr \"Railflow Demo\" -path Master/section1/section2 -f junit -r target/surefire-reports/*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+```
+
+7. Click on the `Parameters` item in the left list, and the parameter setting page will be displayed in the right area.
+
+<ImageZoom src="cicd/teamcity/cli06.png" alt=""/><br/>
+
+8. The page automatically displays parameters used in any `Custom Script`.
+Specify the appropriate values for all parameters:
+   1. `RAILFLOW_KEY` - the Railflow activation key.
+   2. `TESTRAIL_CREDS_USER` - the TestRail username.
+   3. `TESTRAIL_CREDS_PASS` - the password for the TestRail user.
+
+9. When setting `RAILFLOW_KEY` and `TESTRAIL_CEDS_PASS`, click on the `Spec` - > `Edit...` on the Settings page,
+ and then set `Type` as`Password` in the pop-up page.
+
+<ImageZoom src="cicd/teamcity/cli07.png" alt="" style="width:600px"/><br/>
+<ImageZoom src="cicd/teamcity/cli08.png" alt="" style="width:600px"/><br/>
+
+### Examples
+#### Here is railflow output example:
+<ImageZoom src="cicd/railflow/log-teamcity.png" alt="" /><br/>
+
+#### And results in TestRail:
+##### Test Cases:
+<ImageZoom src="cicd/testrail/testrail-testcases.png" alt="" /><br/>
+
+##### Test Plan and Test Run:
+<ImageZoom src="cicd/testrail/testrail-plan-run.png" alt="" /><br/>
+<ImageZoom src="cicd/testrail/testrail-results.png" alt="" /><br/>
+
+##### Created Milestones hierarchy:
+<ImageZoom src="cicd/testrail/testrail-milestones.png" alt="" />

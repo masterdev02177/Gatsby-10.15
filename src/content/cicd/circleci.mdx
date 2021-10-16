@@ -1,0 +1,100 @@
+---
+title: CircleCI
+description: Integrate various testing tools with TestRail by using Railflow and CircleCI.
+---
+
+import ImageZoom from '../../components/ImageZoom'
+
+# Introduction
+[Railflow](https://railflow.io) NPM module can help you integrate your various testing tools and framework running via [CircleCI](https://circleci.com/) with TestRail.  
+Doing this brings all testing activity inside TestRail giving you a clear picture of overall testing progress with TestRail's powerful dashboards.
+
+## Use [CircleCI](https://circleci.com/) with Railflow NPM module/CLI
+
+1. Click the `Set Up Project` button in the projects list to generate the pipeline configuration.
+
+>**NOTE**
+The pipeline configuration is generated under the `circleci-project-setup` branch by default.
+
+2. Modify the pipeline script for testing the project.
+
+3. Modify the docker image setting in the pipeline script to add [NodeJS](https://nodejs.org) environment.
+For example, the provided example uses `cimg/openjdk:8.0.282-node` docker image.
+```yaml:title=./circleci/config.yml
+    docker:
+      - image: cimg/openjdk:8.0.282-node
+```
+
+4. Add the Railflow installation step to the end of the test running job.
+```yaml:title=./circleci/config.yml
+    - run:
+        name: Install Railflow
+        command: npm install railflow
+        when: always
+```
+
+>**NOTE** We need to add the line `when: always` to make sure it will be executed even if some tests fail.
+
+5. Add a step to upload test results into TestRail with Railflow:
+```yaml:title=./circleci/config.yml
+    - run:
+        name: Export test results to TestRail
+          command: npx railflow -k $RAILFLOW_KEY -url https://testrail.server.address/ -u $TESTRAIL_CREDS_USER -p $TESTRAIL_CREDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+        when: always
+```
+
+>**NOTE**
+Adjust the Railflow arguments according to the Railflow [`Command Line Arguments`](/cli/railflow-npm#command-line-arguments) reference.
+
+6. In CircleCI UI, navigate to `Project Settings` &#x2192 `Environment Variables` and add variables used by Railflow.
+For the script above, the following variables should be defined:
+   1. `RAILFLOW_KEY` - the Railflow license key.
+   2. `TESTRAIL_CREDS_USER` - the TestRail username you are using.
+   3. `TESTRAIL_CREDS_PASS` - the password for the TestRail user.
+
+<ImageZoom src="cicd/circleci/cli02.png" alt=""/><br/>
+
+>**NOTE**
+Here is a complete example script which runs JUnit tests with Maven and then export results into TestRail:
+
+```yaml:title=./circleci/config.yml
+version: 2.1
+
+jobs:
+  test-junit:
+    docker:
+      - image: cimg/openjdk:8.0.282-node
+    steps:
+      - checkout
+      - run:
+          name: Run unit tests
+          command: mvn test
+      - run:
+          name: Install Railflow
+          command: npm install railflow
+          when: always
+      - run:
+          name: Export test results to TestRail
+          command: npx railflow -k $RAILFLOW_KEY -url https://testrail.server.address/ -u $TESTRAIL_CREDS_USER -p $TESTRAIL_CREDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+          when: always
+
+workflows:
+  railflow-demo:
+    jobs:
+      - test-junit
+```
+
+### Examples
+#### Here is railflow output example:
+<ImageZoom src="cicd/railflow/log-gitlab.png" alt="" /><br/>
+
+#### And results in TestRail:
+##### Test Cases:
+<ImageZoom src="cicd/testrail/testrail-testcases.png" alt="" /><br/>
+
+##### Test Plan and Test Run:
+<ImageZoom src="cicd/testrail/testrail-plan-run.png" alt="" /><br/>
+<ImageZoom src="cicd/testrail/testrail-results.png" alt="" /><br/>
+
+##### Created Milestones hierarchy:
+<ImageZoom src="cicd/testrail/testrail-milestones.png" alt="" />

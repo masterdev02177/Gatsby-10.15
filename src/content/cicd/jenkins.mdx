@@ -1,0 +1,301 @@
+---
+title: Jenkins
+description: Integrating Jenkins with TestRail using Railflow.
+---
+
+import ImageZoom from '../../components/ImageZoom'
+
+### Jenkins and Testing Results
+>Jenkins is one of the most popular CI applicaitons and is used by thousands of companies all over the world. Jenkins is used to define the application build and test processes. QA teams also use Jenkins to run/schedule functional tests across a variety of tools and frameworks. However, the results of these tests can only be viewed in Jenkins and it is not really possible to aggregate results across multiple jobs, retain long history, and delegate test failrues to your team.  
+
+
+### TestRai + Jenkins + Railflow 
+>By using Railflow, you can easily integrate Jenkins testing jobs with TestRail and automatically export all testing reports to TestRail. Aggregating result from all your Jenkins jobs into TestRail allows teams to look at test trends, auto-assign failures via Railflow automation, create link between Jenkins and TestRail, and much more. 
+
+
+### Simple and Flexible Setup
+>Railflow can be used within Jenkins in a variety of ways. 
+* Railflow Jenkins Plugin
+* Railflow NPM Package
+* Docker Image using the Railflow NPM package
+
+
+## Jenkins plugin (option 1)
+>Railflow Jenkins plugin is a typical Jenkins plugin. However, because Railflow is a commerical product, the plugin cannot be hosted on the Jenkins plugin directory. 
+
+### Installation
+
+1. Download [Railflow Jenkins Plugin](https://railflow.io/downloads/jenkins/railflow-jenkins-plugin-2.2331.hpi)
+2. Upload the plugin via `Manage Jenkins` &#x2192 `Manage Plugins` &#x2192 `Advanced` &#x2192 `Upload Plugin`
+     <ImageZoom src="cicd/jenkins/jenkins-plugin-upload.png" alt=""/>
+3. Upload and restart Jenkins for the plugin to take effect. 
+
+### Configuration
+To configure plugin, navigate to `Manage Jenkins` &#x2192 `Configure System` page of the Jenkins UI and scroll down to the `Railflow Global Settings` section:
+ <ImageZoom src="cicd/jenkins/jenkins-plugin-config.png" alt=""/>
+
+### Licensing 
+Railflow provides two license activation models. 
+
+1. **License Key** (online activiation): Select `License Key` option and copy/paste the license key from your email and click `Activate License`
+<ImageZoom src="cicd/jenkins/online-activation.png" alt=""/>
+
+2. **License File** (offline activiation): If your Jenkins instance does not have outbound internet access, you may use this option to upload the license activation from your email. The license file has a .skm extension.
+<ImageZoom src="cicd/jenkins/offline-license-activation.png" alt=""/>
+
+### TestRail Configuration
+Railflow plugin configuration section allows you to configure multiple TestRail servers. Once configured, they can be easily referenced in the Jenkins jobs. 
+
+<ImageZoom src="cicd/jenkins/plugin04.png" alt=""/>
+
+### Job Config using plugin UI 
+>Once the plugin has been been configured, you can easily configure any Jenkins job that is running any testing tool/framwework. If you are using the UI based plugin apporach for you jobs, simple follow these steps
+
+1. Add and configure the Railflow post-build action: `Railflow Plugin: TestRail Test Results Processor`. This post-build action allows you to specify your test framework, test results location, and a variety of TestRail details.
+
+<ImageZoom src="cicd/jenkins/plugin-job-1.png" alt=""/>
+
+A few additional configuration fields can be accessed by clicking on "Advanced" button:
+
+<ImageZoom src="cicd/jenkins/plugin-job-3.png" alt=""/>
+
+
+### Job Config using Pipeline
+>If you are using Jenkins pipelines instead of the plugin UI (example above), you can use the pipeline script to add the Railflow plugin within your Jenkins testing job.
+
+Here is an end-to-end example of a Jenkins pipeline script for building a JUnit test project and then using Railflow for processing the junit test results.
+
+
+```groovy
+pipeline {
+    agent {
+        label "linux"
+    }
+    stages {
+       stage('Build') {
+          steps {
+             echo '********BUILD STEP**********'
+             git branch: 'master', credentialsId: '*****', url: 'https://...junit-demo.git'
+             sh 'mvn test'
+          }
+       }
+    }
+    post {
+     always {
+     echo '********UPLOAD RESULT INTO TESTRAIL**********'
+
+    railflow(
+        testRailServerName: 'TestRail',
+        testRailProjectName: 'Railflow Demo',
+        failIfUploadFailed: true,
+        jobConfigurations: [[configurationNames: '''OS/Linux
+            Browser/Chrome''', 
+        milestonePath: 'M1/M2', 
+        resultFilePattern: '**/surefire-reports/*.xml',
+        testCaseCustomFields: '''Required text field=Hello from Jenkins
+            estimate=30s''', 
+        testCasePath: 'Railflow/Website', 
+        testCasePriority: 'High', 
+        testCaseType: 'Automated', 
+        testPlanName: 'Test plan', 
+        testReportFormat: 'JUNIT', 
+        testResultCustomFields: '''Custom field=Results from Jenkins
+            version=2.0''', 
+        testRunName: '${JOB_NAME}-${BUILD_NUMBER}']])
+      }
+    }
+}
+```
+
+
+
+
+### Post-Build Action Reference
+>The post-build action provides a host of options to allow users to setup the Jenkins integration per their needs. The reference describes all the options and their useage.
+>You can also add multiple configurations by using the `Add More` button. This may be needed to do this if you want to dispatch multiple reports to multiple TestRail destinations. 
+
+
+| Field Name                       | Required | Description                                                                                                                                                                                                                                                                                                                                                                                       |
+|----------------------------------|----------|-------------|
+| TestRail Server 	               | Yes	| Select one of the server names configured in "Global settings configuration"	|
+| TestRail Project                 | Yes   | The name of a project in TestRail to which results should be exported			|
+| Fail build if upload unsuccessful| N/A      | If checked, the build will be marked as failed if for any reason the plugin could not upload the results. This could be due to Railflow issues, TestRail server issues, network issues, etc.	|
+| Override TestRail Credentials	   | No	| If specified, it overrides TestRail user credentials defined in Global Configuration	|
+| Results File Pattern   | Yes      | The file path to the test report file(s) generated during the build. Ant-style patterns such as **\*\*/surefire-reports/\*.xml** can be used.<br/>E.g. use **target/surefire-reports/*.xml** to capture all XML files in **target/surefire-reports** directory.	|
+| Report Format            | Yes      | Results file format	|
+| Test Case Path				   | Yes | Path to where Railflow should upload test case definitions, must contain suite name in the beginning (for single-suite project, suite name is always 'Master'), e.g. Master/Section1/Section2 |
+| Test Plan Name     | No       | Name of a test plan in TestRail to which test results will be added |
+| Test Run Name     | No       | Name of a test run in TestRail to which test results will be added |
+| Milestone Path      | No       | Path to a milestone in TestRail to which test run/plan will be added.<br/>E.g. Milestone1/Milestone2 |
+| Smart Test Failure Assignment  |	No	| A comma separated list of user emails for smart failure assignment. Each failed result will be assigned to a person from this list in a round robin fashion<br/>|
+| Log Level | No | Logging level for the plugin log file (.railflow.log) |
+
+| Advanced Field Name | Description                                                                                                                                                                                                                                                                                                                                                                                       |
+|---------------------|--------------------------------------------------------------------------------------------|
+| Test Case Type            | Name of a case type in TestRail, e.g. `Automated` |
+| Test Case Priority        | Name of a case priority in TestRail, e.g. `High` |
+| Test Case Template        | Name of a TestRail template. If it is blank, `Test Case (Steps)` will be used. |
+| Test Case Custom Fields   |  Values for case fields in TestRail can be specified in this field. The format is [TestRail field label]=[value] and each field name\\value pair should start with the new line.<br/>E.g.:<br/>Custom Field One=foo<br/>Custom Field Two=bar |
+| Test Result Custom Fields | Values for result fields in TestRail can be specified in this field. The format is [TestRail field label]=[value] and each field name\\value pair should start with the new line.<br/>E.g.:<br/>Custom Result Field One=foo<br/>Custom Result Field Two=bar |
+| Configuration Names       | A list of configuration names in TestRail. The format is [Config Group Name]/[Config Name]. Each entry must start with the new line.<br/>E.g.:<br/>Operating Systems/Linux<br/>Browsers/Chrome|
+| Test case  to ID map      | A list of test name to TestRail ID mappings. Each line contains a mapping between fully-qualified test case name and TestRail ID.<br/>E.g.: io.railflow.Test.method1=42<br/>io.railflow.Test.method2=43|
+| Disable Grouping	        | If checked, Railflow will ignore structure in report files and upload all test cases into one Section, defined by the Test Path parameter. |
+| Close Run			        | If checked, Railflow will close the test run in TestRail and archive its tests and results |
+| Close Plan		        | If checked, Railflow will close the test plan in TestRail and archive its tests and results |
+
+
+
+
+### TestRail Export Details
+>The Railflow plugin creates a very rich and flexible integration between Jenkins and TestRail. Based on your plugin configuration, TestRail entities can be created or updated automatically. The screenshots below show the output of processing a typical JUnit test framework report. 
+
+**Jenkins console output:**  
+<ImageZoom src="cicd/jenkins/plugin-exec-1.png" alt=""/>
+
+**Automatic Test Creation:**  
+<ImageZoom src="cicd/jenkins/plugin-exec-3.png" alt=""/>
+
+**Automatic Test Plan and Runs:**
+<ImageZoom src="cicd/jenkins/plugin-exec-4.png" alt=""/>
+<ImageZoom src="cicd/jenkins/plugin-exec-5.png" alt=""/>
+
+**Test Results Details:**
+<ImageZoom src="cicd/jenkins/plugin-exec-6.png" alt=""/>
+
+**Automatic Milestones:**
+<ImageZoom src="cicd/jenkins/plugin-exec-7.png" alt=""/>
+
+### Smart Failure Assignment
+>Smart Failure assignment is a very powerful feature of Railflow and allows teams to efficiently and strategically assign test failures to specified team members. Doing this automatically as part of the CI process means that teams don't waste valueable time during the test triage process. 
+
+**Pre-requisites**<br/>
+Due to some limitations of the TestRail REST API, users should be configured explicitly on the project access page and have a role defined in the `Project Access` column:
+<ImageZoom src="cicd/jenkins/smart-failure-5.png" alt=""/>
+
+**Example**<br/>
+Consider a Jenkins Selenium Webdriver job build is failing with 5 test failures, and 2 user configured in the `Smart Test Failure Assignment` field.
+
+**Specify the users in the Job configuration**<br/>
+<ImageZoom src="cicd/jenkins/smart-failure-1.png" alt=""/>
+
+**Jenkins Console Output**<br/>
+<ImageZoom src="cicd/jenkins/smart-failure-2.png" alt=""/>
+
+**TestRail Results**<br/>
+
+<ImageZoom src="cicd/jenkins/smart-failure-3.png" alt=""/>
+
+<ImageZoom src="cicd/jenkins/smart-failure-4.png" alt=""/>
+
+
+## NPM Package (option 2)
+
+### Jenkins pipelines
+You can run railflow in [Jenkins](https://jenkins.io/) pipeline by the following steps:<br/>
+
+1. From the Jenkins home page (i.e. the Dashboard of the Jenkins classic UI), click `New Item` in the top left corner to create a new Project in Jenkins.
+<ImageZoom src="cicd/jenkins/cli01.png" alt="" width="200px"/><br/>
+
+2. In the `Enter an item name` field, specify the name for your new project, select the `Pipeline` type and click the `OK` button.
+<ImageZoom src="cicd/jenkins/cli02.png" alt=""/><br/>
+
+3. Add the pipeline script in the `Script` textarea of the `Pipeline` section and click the `Save` button. See an example below:
+<ImageZoom src="cicd/jenkins/cli03.png" alt=""/><br/>
+
+```groovy:title=Jenkinsfile
+pipeline {
+    agent any
+    environment {
+        GITLAB_AUTH_TOKEN = credentials('gitlab-auth-token')
+        RAILFLOW_KEY = credentials('railflow-key')
+        TESTRAIL_CREDS = credentials('testrail-creds')
+    }
+    tools {
+        jdk 'default'
+        maven 'default'
+        nodejs 'default'
+    }
+    stages {
+        stage('Checkout'){
+            steps{
+                checkout([$class: 'GitSCM', branches: [[name: '*/development']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'gitlab-liu.yang', url: 'https://gitlab.com/goliathbear/perfmeter/splunk-rest-client.git']]])
+            }
+        }
+        stage('Run unit tests') {
+            steps {
+                sh 'mvn clean test'
+            }
+        }
+    }
+    post{
+        always{
+            echo "Begin exporting to TestRail"
+            sh "echo registry=https://gitlab.com/api/v4/projects/22507613/packages/npm/ > .npmrc"
+            sh "echo //gitlab.com/api/v4/projects/22507613/packages/npm/:_authToken=${GITLAB_AUTH_TOKEN} >> .npmrc"
+            sh "npm install railflow"
+            sh "npx railflow -k ${RAILFLOW_KEY} -url https://testrail_server/ -u ${TESTRAIL_CREDS_USR} -p ${TESTRAIL_CREDS_PSW} -pr \\\"Railflow Demo\\\" -path Master/section1/section2 -f junit -r target/surefire-reports/*.xml -tp TestPlan12345 -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2"
+        }
+    }
+}
+```
+
+4. Alternatively, you can use `Pipeline script from SCM` option if your Jenkinsfile is stored in SCM.
+<ImageZoom src="cicd/jenkins/cli04.png" alt=""/><br/>
+
+5. Depending on the SCM type, set all required connection parameters, select branch name and set a path to the pipeline script file (Jenkinsfile). When everything is set, click on `Save` button.
+<ImageZoom src="cicd/jenkins/cli05.png" alt=""/><br/>
+
+In such a case, your Jenkinsfile should not contain a `Checkout` stage, as Jenkins will do the checkout automatically according to the settings above <br/>
+
+### Post-build shell script
+It is also possible to export test results with Railflow in a post-build shell script by following steps below:
+1. Install [NodeJS](https://nodejs.org) on the Jenkins server.
+2. Install [PostBuildScript](https://plugins.jenkins.io/postbuildscript/) plugin for Jenkins and restart Jenkins to make the plugin work.
+<ImageZoom src="cicd/jenkins/cli06.png" alt=""/><br/>
+
+3. From the Jenkins home page (i.e. the Dashboard of the Jenkins classic UI), click `New Item` in the top left corner to create a new Project in Jenkins.
+<ImageZoom src="cicd/jenkins/cli01.png" alt="" width="200px"/><br/>
+
+4. Specify the name for a new project in the `Enter an item name` field, select the `Freestyle project` type and click the `OK` button.
+<ImageZoom src="cicd/jenkins/cli07.png" alt=""/><br/>
+
+5. Select appropriate SCM system (e.g. Git) and fill out the required fields.
+<ImageZoom src="cicd/jenkins/cli08.png" alt=""/><br/>
+
+6. Select `User secret text(s) or file(s)` checkbox in the `Build Environment` section and add variables for storing your credentials or user/password pair. For example, `RAILFLOW_KEY`, `TESTRAIL_CREDS_USR` and `TESTRAIL_CREDS_PSW` are in the image below. These environment variables can be used in the script.
+<ImageZoom src="cicd/jenkins/cli09.png" alt=""/><br/>
+
+7. Click the `Add build step` button to add the build operations you want. For example, select `Invoke top-level Maven targets` to run maven goals.
+<ImageZoom src="cicd/jenkins/cli10.png" alt=""/><br/>
+
+8. In the `Post-build Actions` tab, click the `Add post-build action` button, then click `Execute script` in the pop-up menu.
+<ImageZoom src="cicd/jenkins/cli11.png" alt=""/><br/>
+
+9. Click the `Add post build step` button.
+<ImageZoom src="cicd/jenkins/cli12.png" alt=""/><br/>
+
+10. Select `FAILURE` for `If build was`. Click the `Add build Step` button, and then select appropriate shell script from the pop-up menu. For example, select `Execute windows batch command` if you are running Jenkins on Windows OS.
+<ImageZoom src="cicd/jenkins/cli13.png" alt=""/><br/>
+
+11. Add your shell script into the `Command` textarea and click the `Save` button.
+<ImageZoom src="cicd/jenkins/cli14.png" alt=""/><br/>
+
+```shell:title=example
+call npm install railflow
+call npx railflow -k %RAILFLOW_KEY% -url https://testrail.railflow.io/ -u %TESTRAIL_CREDS_USR% -p %TESTRAIL_CREDS_PSW% -pr \"JUnit Demo\" -path Master/section1/section2 -f junit -r target/surefire-reports/*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+```
+
+### Examples
+#### Here is railflow output example:
+<ImageZoom src="cicd/railflow/log-jenkins.png" alt="" /><br/>
+
+#### And results in TestRail:
+##### Test Cases:
+<ImageZoom src="cicd/testrail/testrail-testcases.png" alt="" /><br/>
+
+##### Test Plan and Test Run:
+<ImageZoom src="cicd/testrail/testrail-plan-run.png" alt="" /><br/>
+<ImageZoom src="cicd/testrail/testrail-results.png" alt="" /><br/>
+
+##### Created Milestones hierarchy:
+<ImageZoom src="cicd/testrail/testrail-milestones.png" alt="" />

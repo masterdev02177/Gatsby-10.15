@@ -1,0 +1,82 @@
+---
+title: Postman
+description: Learn how to use Railflow for Postman
+---
+
+import ImageZoom from '../../components/ImageZoom'
+
+# Introduction
+[Railflow](https://railflow.io) provides a powerful and convenient NPM package which can be run from your favorite CI application and upload [Postman/Newman](https://www.postman.com/) reports into TestRail easily. Doing this brings all testing activity inside TestRail giving you a clear picture of overall testing progress with TestRail's powerful dashboards.
+    
+To integrate your Postman collection with TestRail, the following steps should be done:
+
+1. Run your collection with Postman or Newman and save execution report in JSON file
+2. Install Railflow NPM package
+3. Run Railflow command line interface and feed report file to it
+
+
+## Running your tests with Postman/Newman
+To export test results into TestRail, a Newman JSON report is required. The report can be generated either from Postman itself or with Newman:
+
+### Generating test report with Postman
+If you run your test collection from Postman directly then report can be exported by clicking on `Export Results` button.
+
+<ImageZoom src="tools/postman/postman-export-report.png" alt=""/><br/>
+
+### Generating test report with Newman
+To generate test report with Newman just execute your newman `run` command:
+
+```shell
+newman run mycollection.json --reporters cli,json --reporter-json-export outputfile.json
+```
+
+This will generate the `outputfile.json` report file which Railflow can parse.
+
+## Railflow NPM package installation
+
+Run the following command to install Railflow globally:
+
+```shell
+npm install -g railflow
+```
+
+## Uploading test results into TestRail
+
+Once the JSON report file has been generated, it can be passed into Railflow for uploading results into Railflow:
+
+```shell
+railflow -k <license key> -url <TestRail URL> -u <username> -p <password> -pr <project name> -path <suite name>/<section name>/<subsection name> -f newman -r outputfile.json
+```
+
+Where:
+*  `license key` - the Railflow license key
+*  `TestRail URL` - The URL of TestRail server, e.g., https://testrail.yourcompany.com
+*  `username` - the email id of the TestRail user, e.g., user@yourcompany.com
+*  `password` - the password for TestRail user
+*  `project name` - the name of a TestRail project into which results will be exported into
+*  `path` - path to where Railflow should upload test case definitions, must start with Suite name (for single-suite project it is always `Master`), e.g. Master/Section/Subsection
+
+E.g.:
+```shell
+railflow -k AAAAA-BBBBB-CCCCC-DDDDD -url https://testrail.yourcompany.com -u user@yourcompany.com -p someverysecurepassword -pr "Railflow Demo" -path "Master/Railflow/Postman Tests" -f newman -r outputfile.json
+```
+
+Please refer to the Railflow [`Command Line Arguments`](/cli/railflow-npm#command-line-arguments) reference for more details.
+
+## Examples
+
+Test collection in Postman:
+
+<ImageZoom src="tools/postman/postman-example-1.png" alt=""/><br/>
+
+Running test collection with Newman:
+
+<ImageZoom src="tools/postman/postman-example-2.png" alt=""/><br/>
+
+Exporting generated JSON report into TestRail using Railflow NPM:
+
+<ImageZoom src="tools/postman/postman-example-3.png" alt=""/><br/>
+
+Results in TestRail:
+
+<ImageZoom src="tools/postman/postman-example-4.png" alt=""/><br/>

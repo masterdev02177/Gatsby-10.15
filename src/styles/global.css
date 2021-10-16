@@ -1,0 +1,19 @@
+img.logo{
+    max-width: 200px;
+}
+span.title-sidebar {
+    padding-right: 20px;
+    line-height: 25px;
+    vertical-align: bottom;
+}
+.sidebar a.active:before {
+    display: block;
+    content: '\2192';
+    float: left;
+    padding-right: 5px;
+    font-size: 1.2rem;
+    line-height: 20px;
+}
+.sidebar span:first-child {
+    display: none !important;
+}

@@ -1,0 +1,81 @@
+---
+title: Railflow Command Line Interface (CLI)
+description: Using the Railflow Command Line Interface
+---
+import ImageZoom from '/src/components/ImageZoom'
+
+> Railflow's Command Line Interface (CLI) is wrapper around the TestRail REST API and allows users to process a variety of testing framework reports from any CICD system and automatically export them to TestRail. The CLI provides a host of options so that you can display test reports per your needs.
+
+### Railflow CLI Requirements
+1. [NodeJS](https://nodejs.org) - v14 or higher.
+2. Enable TestRail API 
+<ImageZoom src="arch/site-settings-api.png" alt="" />
+
+
+### Installation
+Railflow CLI is a npm based utility. Installing Railflow is as simple as installing any other npm package. 
+
+```shell
+$ npm install railflow
+```
+### CLI Command Reference
+> Note: Use double quotes for argument values with spaces. Example: --project "demo project"
+
+> Note: Railflow CLI will automatically create tests, runs, plans, milestones, etc if they do not exist. 
+
+
+
+| Key                           | Required                 | Description                                                                                                                                                 | Example                                                               |
+| ----------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| -v, --version                 | No                       | outputs railflow version number                                                                                                                             | -v                                                                    |
+| -k, --key                     | -k or -l                 | (onlie activation) License key                                                                                                                              | -k XXXXX-XXXXX-XXXXX-XXXXX                                            |
+| -l, --license-file            | -k or -l                 | (offline activiation) File Path or remote url license file                                                                                                  | -l /files/ActivationFile.skm                                          |
+| -url, --url                   | Yes                      | TestRail instance URL                                                                                                                                       | -url https://example.testrail.io                                      |
+| -u, --username                | Yes                      | TestRail username                                                                                                                                           | -u test-username                                                      |
+| -p, --password                | Yes                      | TestRail password or API Key                                                                                                                                | -p XtpHXiPLEODyhF                                                     |
+| -pr, --project                | Yes                      | TestRail project name                                                                                                                                       | -pr "project-01"                                                      |
+| -path, --test-path            | Yes                      | TestRail Test Cases path                                                                                                                                    | -path "Section1/subsection2/ShoppingCart                              |
+| -f, --format                  | Yes                      | Report format: JUnit, TestNg, Cucumber, NUnit, Allure, Robot, TRX                                                                                           | -f junit                                                              |
+| -r, --report-files            | Yes                      | The file path (ant-syle)to the test report file(s)<br/>``ant-style patterns``: **\*\*/surefire-reports/\*.xml**<br/>Example: To capture all xml files in target/surefire-reports directory <br/> **target/surefire-reports/\*.xml**     | -r target/surefire-reports/*.xml                                      |
+| -px, --proxy                  | No                       | HTTP or SOCKS proxy configuration <br/> Example: socks://username:password@127.0.0.1:1080                                                                        | -px socks://127.0.0.1:1080                                            |
+| -t, --timeout                 | No                       | Upload timeout (seconds)                                                                                                                                    | -t 10                                                                 |
+| -tr, --test-run               | No                       | TestRail Test Run name                                                                                                                                      | -tr "Chrome Regression Run"                                                      |
+| -tp, --test-plan              | No                       | TestRail Test Plan Name                                                                                                                                     | -tp "Shopping Cart Test Plan"                                                       |
+| -mp, --milestone-path         | No                       | TestRail Milestone path                                                                                                                                     | -mp Milestone1/Milestone2                                             |
+| -cf, --case-fields            | No                       | TestRail test case custom fields. <br/> The format is: ``[Field label]=[value]`` pairs, separated with '\|\|', <br/> Example: Case Field 1=value 1\|\|Case Field 2=value 2 ...                          | -cf "Case Field 1=value 1\|\|Case Field 2=value 2"                    |
+| -rf, --result-fields          | No                       | TestRail test results custom fields. <br/> The format is ``[Field label]=[value]`` pairs, separated with '\|\|', <br/> Example:  Result Field 1=value 1\|\|Result Field 2=value 2 ...               | -rf "Result Field 1=value 1\|\|Result Field 2=value 2"                |
+| -a, --assign                  | No                       | Smart Test Failure Assingment. Comma-separated list of TestRail users (email addresses). Railflow will assign failures based on a roundrobin algorithm.                                                             | -a user1@email.com,user2@email.com                                    |
+| -af, --assign-file            | No                       | Smart Test Failure Assingment. File path containing list of TestRail users (email addresses). <br/>``Note: One user per line``           | -af /assignees.txt                                                    |
+| -cn, --config-names           | No                       | TestRail test plan configuration options <br/>Configuration format is: [config_group_name]/[config_name]<br/> Example: Operating Systems/Linux\|\|Operating Systems/Windows\|\|...              | -cn Operating Systems/Linux\|\|Operating Systems/Windows              |
+| -cr, --close-run              | No                       | If railflow should close the corresponding run after uploading test results                                                                                 | -cr                                                                   |
+| -cp, --close-plan             | No                       | If railflow should close the corresponding plan after uploading test results                                                                                | -cp                                                                   |
+| -dg, --disable-grouping       | No                       | If railflow should ignore report structure and just upload all tests into a folder which is set by test-path parameter                                      | -dg                                                                   |
+| -tn, --template-name          | No                       | The name of a template to use in TestRail. If it is not set, 'Test Case (Steps)' will be used                                                               | -tn "Test Case (Steps)"                                               |
+| -cst, --case-type             | No                       | The name of a type for cases                                                                                                                                | -cst other                                                            |
+| -csp, --case-priority         | No                       | The name of a priority for cases                                                                                                                            | -csp medium                                                           |
+| -th, --thread-number          | No                       | The number of concurrent threads for exporting data                                                                                                         | -th 8                                                                 |
+| -ds, --disable-stats          | No                       | If railflow should disable collecting usage and error logs                                                                                                  | -ds                                                                   |
+| -h, --help                    | No                       | Show the help information                                                                                                                                   | -h                                                                    |
+
+
+> Railflow general usage format:
+
+```shell:title=Example
+npx railflow -k <license key> -url <testrail address> -u <username> -p <password> -pr <project name> -path <suite name>/<section name>/<subsection name> -f junit -r <report files pattern> -tp [test plan name] -mp [milestone path]
+```
+
+## Example usage
+
+Export JUnit report into TestRail with a license key (online activation method)
+```shell:title=Example
+npx railflow -k ABCDE-12345-FGHIJ-67890 -url https://testrail.your-server.com/ -u testrail-username -p testrail-password -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2 -cn Browsers/Firefox -af assignees.txt
+```
+
+Export JUnit report into TestRail with a license file (offline activation method)
+```shell:title=Example
+npx railflow -l /home/user/ActivationFile20201020.skm -url https://testrail.your-server.com/ -u testrail-username -p testrail-password -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2 -cn Browsers/Firefox -af assignees.txt
+```
+
+### Example result in TestRail
+
+<ImageZoom src="cicd/testrail/02/testrail-results.png" alt="" />

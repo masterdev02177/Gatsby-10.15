@@ -1,0 +1,88 @@
+---
+title: Azure DevOps
+description: Integrate various testing tools with TestRail by using Railflow and Azure.
+---
+
+import ImageZoom from '../../components/ImageZoom'
+
+# Introduction
+[Railflow](https://railflow.io) NPM module can help you integrate your various testing tools and framework running via [Azure DevOps](https://azure.microsoft.com/en-us/services/devops/) with TestRail.  
+Doing this brings all testing activity inside TestRail giving you a clear picture of overall testing progress with TestRail's powerful dashboards.
+
+## Use [Azure DevOps](https://azure.microsoft.com/en-us/services/devops/) with Railflow NPM module/CLI
+1. Modify your pipeline script file `azure-pipelines.yml` and add task for NodeJS installation to the end of the script.
+If the environment you are using already contains NodeJS, please skip this step.
+```yaml:title=azure-pipelines.yml
+- task: NodeTool@0
+  inputs:
+    versionSpec: '14.x'
+```
+
+2. Add the scripts to install Railflow and upload test results into Railflow to the end of the test run job.
+```yaml:title=azure-pipelines.yml
+- script: npm install railflow
+  condition: always()
+
+- script: npx railflow -k $(RAILFLOW_KEY) -url https://testrail.server.address/ -u $(TESTRAIL_CREDS_USER) -p $(TESTRAIL_CREDS_PASS) -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/TEST-\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+  condition: always()
+```
+
+>**NOTE**
+Adjust the Railflow arguments according to the Railflow [`Command Line Arguments`](/cli/railflow-npm#command-line-arguments) reference.
+
+3. In the editing page of a pipeline, add the variables by clicking on the `Variables` button.
+For the script above, the following variables should be defined:
+   1. `RAILFLOW_KEY` - the Railflow license key.
+   2. `TESTRAIL_CREDS_USER` - the TestRail username you are using.
+   3. `TESTRAIL_CREDS_PASS` - the password for the TestRail user.
+
+<ImageZoom src="cicd/azure/cli01.png" alt="" width="200px"/><br/>
+
+4. Select `Keep this value secret` for `RAILFLOW_KEY` and `TESTRAIL_CREDS_PASS` variables.
+
+>**NOTE**
+Here is a complete example script which runs JUnit tests with Maven and then export results into TestRail:
+
+```yaml:title=azure-pipelines.yml
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: Maven@3
+  inputs:
+    mavenPomFile: 'pom.xml'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: true
+    testResultsFiles: '**/surefire-reports/TEST-*.xml'
+    goals: 'clean test'
+
+- task: NodeTool@0
+  inputs:
+    versionSpec: '14.x'
+
+- script: npm install railflow
+  condition: always()
+
+- script: npx railflow -k $(RAILFLOW_KEY) -url https://testrail.server.address/ -u $(TESTRAIL_CREDS_USER) -p $(TESTRAIL_CREDS_PASS) -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/TEST-\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+  condition: always()
+```
+
+### Examples
+#### Here is railflow output example:
+<ImageZoom src="cicd/railflow/log-gitlab.png" alt="" /><br/>
+
+#### And results in TestRail:
+##### Test Cases:
+<ImageZoom src="cicd/testrail/testrail-testcases.png" alt="" /><br/>
+
+##### Test Plan and Test Run:
+<ImageZoom src="cicd/testrail/testrail-plan-run.png" alt="" /><br/>
+<ImageZoom src="cicd/testrail/testrail-results.png" alt="" /><br/>
+
+##### Created Milestones hierarchy:
+<ImageZoom src="cicd/testrail/testrail-milestones.png" alt="" />

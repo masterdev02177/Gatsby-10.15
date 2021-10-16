@@ -1,0 +1,100 @@
+---
+title: GitHub Actions
+description: Integrate various testing tools with TestRail by using Railflow and GitHub Actions.
+---
+
+import ImageZoom from '../../components/ImageZoom'
+
+# Introduction
+[Railflow](https://railflow.io) NPM module can help you integrate your various testing tools and framework running via [GitHub Actions](https://github.com/features/actions) with TestRail.  
+Doing this brings all testing activity inside TestRail giving you a clear picture of overall testing progress with TestRail's powerful dashboards.
+
+## Use [GitHub Actions](https://github.com/features/actions) with Railflow NPM module/CLI
+1. Add `continue-on-error: true` to the end of the tests execution step.
+
+2. Add a new step for installing [NodeJS](https://nodejs.org). If the job already contains [NodeJS](https://nodejs.org), please skip it.
+```yaml
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 14.x
+```
+
+3. Add a new step for installing Railflow and uploading tests results.
+```yaml
+    - name: Export test results to TestRail
+      shell: bash
+      env:
+        RAILFLOW_KEY: ${{ secrets.RAILFLOW_KEY }}
+        TESTRAIL_CREDS_PASS: ${{ secrets.TESTRAIL_CREDS_PASS }}
+      run: |
+        npm install railflow
+        npx railflow -k $RAILFLOW_KEY -url https://testrail.server.address/ -u TestRailUsername -p $TESTRAIL_CREDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+```
+
+>**NOTE**
+Adjust the Railflow arguments according to the Railflow [`Command Line Arguments`](/cli/railflow-npm#command-line-arguments) reference.
+
+4. In GitHub UI, navigate to `Settings` &#x2192 `Secrets` and add the following 2 repository secrets:
+   1. `RAILFLOW_KEY` - the Railflow license key.
+   2. `TESTRAIL_CREDS_PASS` - the password for the TestRail user.
+
+<ImageZoom src="cicd/github/cli01.png" alt=""/><br/>
+
+>**NOTE**
+Here is a complete example script which runs JUnit tests with Maven and then export results into TestRail:
+
+```yaml
+name: Railflow Demo for GitHub Actions
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 8
+      uses: actions/setup-java@v2
+      with:
+        java-version: '8'
+        distribution: 'adopt'
+
+    - name: Test with Maven
+      id: test-with-maven
+      run: mvn -B clean test --file pom.xml
+      continue-on-error: true
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 14.x
+
+    - name: Export test results to TestRail
+      shell: bash
+      env:
+        RAILFLOW_KEY: ${{ secrets.RAILFLOW_KEY }}
+        TESTRAIL_CREDS_PASS: ${{ secrets.TESTRAIL_CREDS_PASS }}
+      run: |
+        npm install railflow
+        npx railflow -k $RAILFLOW_KEY -url https://testrail.server.address/ -u TestRailUsername -p $TESTRAIL_CREDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tn "Test Case (Steps)" -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+```
+
+### Examples
+#### Here is railflow output example:
+<ImageZoom src="cicd/railflow/log-gitlab.png" alt="" /><br/>
+
+#### And results in TestRail:
+##### Test Cases:
+<ImageZoom src="cicd/testrail/testrail-testcases.png" alt="" /><br/>
+
+##### Test Plan and Test Run:
+<ImageZoom src="cicd/testrail/testrail-plan-run.png" alt="" /><br/>
+<ImageZoom src="cicd/testrail/testrail-results.png" alt="" /><br/>
+
+##### Created Milestones hierarchy:
+<ImageZoom src="cicd/testrail/testrail-milestones.png" alt="" />

@@ -1,0 +1,93 @@
+---
+title: GitLab
+description: Integrate various testing tools with TestRail by using Railflow and GitLab.
+---
+
+import ImageZoom from '../../components/ImageZoom'
+
+# Introduction
+[Railflow](https://railflow.io) NPM module can help you integrate your various testing tools and framework running via [GitLab](https://gitlab.com/) with TestRail.  
+Doing this brings all testing activity inside TestRail giving you a clear picture of overall testing progress with TestRail's powerful dashboards.
+
+## Use [GitLab](https://gitlab.com/) with Railflow NPM module/CLI
+1. Modify your `.gitlab-ci.yml` file to install [NodeJS](https://nodejs.org) in the step `before_script:`.
+If the docker image you are using already contains [NodeJS](https://nodejs.org), please skip this step.
+```yaml:title=.gitlab-ci.yml
+before_script:
+  - apt update
+  - curl -sL https://deb.nodesource.com/setup_14.x | bash -
+  - apt -y install nodejs
+```
+
+2. Add the Railflow installation and execution code into `after_script` section:
+
+```yaml:title=.gitlab-ci.yml
+  after_script:
+    - npm install railflow
+    - npx railflow -k $RAILFLOW_KEY -url https://testrail.server.address/ -u $TESTRAIL_CREDS_USER -p $TESTRAIL_CREDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+```
+
+>**NOTE**
+Adjust the Railflow arguments according to the Railflow [`Command Line Arguments`](/cli/railflow-npm#command-line-arguments) reference.
+
+3. In the GitLab UI, navigate to `Settings` &#x2192 `CI/CD` &#x2192 `Variables` and add variables used by Railflow.
+For the script above, the following variables should be defined:
+   1. `RAILFLOW_KEY` - the Railflow license key.
+   2. `TESTRAIL_CREDS_USER` - the TestRail username you are using.
+   3. `TESTRAIL_CREDS_PASS` - the password for the TestRail user.
+
+<ImageZoom src="cicd/gitlab/cli01.png" alt=""/><br/>
+
+4. Uncheck `Protect Variable` for every variable.
+
+5. Check `Mask Variable` for the variables `RAILFLOW_KEY` and `TESTRAIL_CREDS_PASS`.
+
+>**NOTE**
+Here is a complete example script which runs JUnit tests with Maven and then export results into TestRail:
+
+```yaml:title=.gitlab-ci.yml
+image: maven:3.6.3-jdk-8
+
+before_script:
+  - apt update
+  - curl -sL https://deb.nodesource.com/setup_14.x | bash -
+  - apt -y install nodejs
+
+variables:
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode -U"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+
+cache:
+  paths:
+    - .m2/repository/
+    - target/
+    - node_modules/
+
+stages:
+  - test
+
+test:
+  stage: test
+
+  script:
+    - mvn $MAVEN_CLI_OPTS $MAVEN_OPTS -Pintegration-test clean verify
+  after_script:
+    - npm install railflow
+    - npx railflow -k $RAILFLOW_KEY -url https://testrail.server.address/ -u $TESTRAIL_CREDS_USER -p $TESTRAIL_CREDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+
+```
+
+### Examples
+#### Here is railflow output example:
+<ImageZoom src="cicd/railflow/log-gitlab.png" alt="" /><br/>
+
+#### And results in TestRail:
+##### Test Cases:
+<ImageZoom src="cicd/testrail/testrail-testcases.png" alt="" /><br/>
+
+##### Test Plan and Test Run:
+<ImageZoom src="cicd/testrail/testrail-plan-run.png" alt="" /><br/>
+<ImageZoom src="cicd/testrail/testrail-results.png" alt="" /><br/>
+
+##### Created Milestones hierarchy:
+<ImageZoom src="cicd/testrail/testrail-milestones.png" alt="" />

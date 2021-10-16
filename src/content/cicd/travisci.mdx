@@ -1,0 +1,82 @@
+---
+title: Travis CI
+description: Integrate various testing tools with TestRail by using Railflow and Travis CI.
+---
+
+import ImageZoom from '../../components/ImageZoom'
+
+# Introduction
+[Railflow](https://railflow.io) NPM module can help you integrate your various testing tools and framework running via [Travis CI](https://travis-ci.org/) with TestRail.  
+Doing this brings all testing activity inside TestRail giving you a clear picture of overall testing progress with TestRail's powerful dashboards.
+
+## Use [Travis CI](https://travis-ci.org/) with Railflow NPM module/CLI
+1. Modify your `.travis.yml` script and add installation of [NodeJS](https://nodejs.org) into the `before_install` step.
+If the environment you are using already contains [NodeJS](https://nodejs.org), please skip this step.
+```yaml:title=.travis.yml
+before_install:
+  - wget https://raw.githubusercontent.com/creationix/nvm/v0.31.0/nvm.sh -O ~/.nvm/nvm.sh
+  - source ~/.nvm/nvm.sh
+  - nvm install 14
+```
+
+2. Add the Railflow installation and execution code into `after_script` section:
+```yaml:title=.travis.yml
+after_script:
+  - npm install railflow
+  - npx railflow -k $RAILFLOW_KEY -url https://testrail.server.address/ -u $TESTRAIL_CREDS_USER -p $TESTRAIL_CREDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+```
+
+>**NOTE**
+Adjust the Railflow arguments according to the Railflow [`Command Line Arguments`](/cli/railflow-npm#command-line-arguments) reference.
+
+3. In Travis UI, navigate to `Settings` &#x2192 `Environment Variables` and add variables used by Railflow.
+For the script above, the following variables should be defined:
+   1. `RAILFLOW_KEY` - the Railflow license key.
+   2. `TESTRAIL_CREDS_USER` - the TestRail username you are using.
+   3. `TESTRAIL_CREDS_PASS` - the password for the TestRail user.
+
+<ImageZoom src="cicd/travisci/cli01.png" alt=""/><br/>
+
+4. Select "DISPLAY VALUE IN BUILD LOG" for the variable `TESTRAIL_CREDS_PASS` when adding it.
+
+>**NOTE**
+Here is a complete example script which runs JUnit tests with Maven and then export results into TestRail:
+
+```yaml:title=.travis.yml
+language: java
+dist: trusty
+
+jdk:
+  - oraclejdk8
+
+cache:
+  directories:
+    - '$HOME/.m2/repository'
+
+before_install:
+  - wget https://raw.githubusercontent.com/creationix/nvm/v0.31.0/nvm.sh -O ~/.nvm/nvm.sh
+  - source ~/.nvm/nvm.sh
+  - nvm install 14
+
+script:
+  - mvn clean test
+
+after_script:
+  - npm install railflow
+  - npx railflow -k $RAILFLOW_KEY -url https://testrail.server.address/ -u $TESTRAIL_CREDS_USER -p $TESTRAIL_CREDS_PASS -pr "Railflow Demo" -path Master/section1/section2 -f junit -r target/surefire-reports/\*.xml -tr TestRunDemo -tp TestPlanDemo -mp Milestone1/Milestone2
+```
+
+### Examples
+#### Here is railflow output example:
+<ImageZoom src="cicd/railflow/log-gitlab.png" alt="" /><br/>
+
+#### And results in TestRail:
+##### Test Cases:
+<ImageZoom src="cicd/testrail/testrail-testcases.png" alt="" /><br/>
+
+##### Test Plan and Test Run:
+<ImageZoom src="cicd/testrail/testrail-plan-run.png" alt="" /><br/>
+<ImageZoom src="cicd/testrail/testrail-results.png" alt="" /><br/>
+
+##### Created Milestones hierarchy:
+<ImageZoom src="cicd/testrail/testrail-milestones.png" alt="" />
